@@ -1,5 +1,6 @@
 # Java 多线程高并发编程笔记
 ---
+作者:kyrie。***学习记录，如有转发请注明地址。***
 
 ## 第一章 线程与进程
 ### 1.1 什么是进程
@@ -46,7 +47,7 @@
 ### 2.2 线程同步
 1. 锁的是一个对象而不是一串代码段
 2. 如果synchronize加在静态方法上锁定的即是`Class`，如果加在非静态代码块上锁定的是`this`
-3. 锁升级（偏向锁，自旋锁，重量级锁）
+3. 锁升级（无锁，偏向锁，自旋锁，重量级锁）
 > ***偏向锁***（无锁状态，只是在锁定对象上markword（`对象的64位地址的前两位用于标记锁类型`）进行标记，此时只有一个线程使用）
 > ***自旋锁***（无锁状态，两个线程争抢一个锁，另外一个线程自旋等待，Hospot中默认自旋`10`次，锁升级为重量级锁）
 > ***重量级锁***（向操作系统`OS`申请的锁,锁一旦升级将无法降级）
@@ -80,8 +81,9 @@ synchronize(object);
 保证线程可见性，但是不能保证原子性
 禁止指令重排序
 - DCL（Double Check Lock）单例
+> 实现方式
 > - 可见性使用了CPU的`MESI`缓冲一致性协议
-> - 重排序（CPU层面为了提升指令的执行效率，编译器complir 会将java的代码最后执行的指令进行重新排序）底层使用读写屏障来实现防止重排序。
+> - 重排序（CPU层面为了提升指令的执行效率，编译器complir 会将java的代码最后执行的指令进行重新排序）底层使用读写屏障来实现防止重排序，4种屏障，读写，写写，读读，写读。
 
 ### 第四章 CAS （compare and swap 1.8版本，1.8之后改为了 compare and set）
 无锁优化 （自旋锁 乐观锁）
@@ -92,4 +94,129 @@ CAS可能存在ABA问题
 如果是基本数据类型时，ABA问题可以忽略。如果是引用类型时，ABA问题可能引起程序运行错误的问题发生，解决的方案就是给引用对象增加version版本号，在CAS校验时除了校验引用，还需要校验版本号。
 > CAS操作底层都是使用了`Unsafe`类的`compare and set`操作，`Unsafe`底层直接操作都是CPU的原语操作，使用读写屏障（防止指令重排序）保证了CAS的原子性问题
 
-### 第五章 ReentranLock 重入锁
+#### 4.1 性能比较
+在高并发情况下，使用synchronize、atomic、longAdder时，性能差距越来越明显
+``` text
+1000并发，每个线程进行10000次累加的结果：
+sync count: 10000000--time: 512
+atomic count: 10000000--time: 163
+LongAdder count: 10000000--time: 73
+```
+> - synchronize 在高并发情况下，由于锁资源争抢较多，所以很快升级为重量级锁(OS 操作系统锁)
+> - atomic 类采用CAS操作，不会冲系统申请锁
+> - LongAdder 采用CAS操作，但是其底层采用 ***分段锁***，所以性能会更好
+> 不能一概而论sync性能就最差，性能问题应该结合实际的业务执行情况，或者压测结果来定论。现在版本的jdk对sync的优化已经性能很高了
+
+### 第五章 ReentrantLock
+可重入锁，独占锁。他具备跟synch一样的功能，但是释放锁需要手动释放，比synchronize更加灵活。
+> 默认情况下`ReentrantLock`是一个非公平锁，
+``` java
+//非公平锁
+ReentrantLock lock = new ReentrantLock();
+//公平锁
+ReentrantLock lock = new ReentrantLock(true);
+```
+#### 5.1 使用注意
+使用try catch 包裹，finally 中释放锁,防止使用过程中导致的锁不释放的死锁情况发生。如下
+``` java
+    try {
+        //获得锁
+        lock.lock();
+    } finally {
+        //释放锁
+        lock.unlock();
+    }
+```
+
+#### 5.2 特性
+- ReentrantLock 也是互斥锁，如果为同一把锁，多个线程会等待前面线程释放锁后执行
+- 有同一把ReentrantLock锁的两个方法嵌套调用时锁可重入锁，例如A=>B
+- ReentrantLock tryLock(1000) 试着获取锁，如果获取不到执行下面方法，这个是synchronize没有的
+``` java
+//试着获取锁获取规定时间内获取锁
+if (lock.tryLock() || lock.tryLock(10, TimeUnit.SECONDS){
+```
+
+### 第六章 CountDownLatch 递减计数器
+递减计数器。一般用于多个任务共同执行完毕后再执行其他任务时使用。
+> countDownLatch.await();是阻塞运行，需要等countDownLatch的值为0后才可以执行下面的程序
+
+### 第七章 CyclicBarrier 循环栅栏
+CyclicBarrier 循环栅栏 设定一个数量范围，当线程数未达到数量时，所有线程都在等待，当达到数量时统一放行
+例如好多朋友去约饭，餐厅要求人员全部到期了才可以进去占座吃饭
+> 实际场景：一个操作可能需要同时操作数据库，操作文件，操作redis，但是之间又不互相依赖时，可以使用CyclicBarrier
+
+### 第八章 Phaser 阶段执行
+协调多个执行阶段，为每个程序阶段重用Phaser实例。每个阶段可以有不同数量的线程等待前进到另一个阶段
+
+### 第九章 ReadWriteLock 读写锁
+读-共享锁
+写-排他锁
+> 适用于少量线程写入，多个线程读取的场景。因为读锁共享，所以读取效率特别快，但是读必须加锁，防止脏读。
+
+### 第十章 Semaphore 信号量
+Semaphore用于限制可以访问某些资源（物理或逻辑的）的线程数目，他维护了一个许可证集合，有多少资源需要限制就维护多少许可证集合
+``` java
+    /*
+        * 设置信号量为1 ，则表示只有一个线程可以运行，设置为2表示可以有两个同时运行
+        */
+    Semaphore semaphore = new Semaphore(1);
+    new Thread(() -> {
+        try {
+            //获取信号量 信号量值减1
+            semaphore.acquire();
+            System.out.println("t1 run");
+            TimeUnit.SECONDS.sleep(1);
+            System.out.println("t1 run2");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            //释放信号量 信号量值加1，一定要在finally中关闭，类似于lock的unlock
+            semaphore.release();
+        }
+
+    }).start();
+```
+> 用于买票或者同一个资源的访问数限制
+
+### 第十一章 Exchanger 交换器
+只用于两个工作线程之间交换数据，如果有一个线程没有进行数据交换则另外一个线程一直阻塞。
+使用场景：例如游戏中两个人交换装备
+``` java
+new Thread(()->{
+    String s = "T2";
+    try {
+        //交换数据到另外一个线程
+        s = exchanger.exchange(s);
+        System.out.println(Thread.currentThread().getName()+"--"+s);
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    }
+},"thread2").start();
+```
+
+### 第十二章 LockSupport
+阻塞和唤醒线程使用
+ * （1）wait和notify都是Object中的方法,在调用这两个方法前必须先获得锁对象，但是park不需要获取某个对象的锁就可以锁住线程。
+ * （2）notify只能随机选择一个线程唤醒，无法唤醒指定的线程，unpark却可以唤醒一个指定的线程。
+ > 底层是使用Unsafe类实现的，跟CAS使用的是同一个类。
+``` java
+//示例
+Thread t = new Thread(() -> {
+    for (int i = 0; i < 10; i++) {
+        System.out.println("TT"+i);
+        if (i==5){
+            //锁定
+            LockSupport.park();
+        }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+});
+t.start();
+//解锁
+LockSupport.unpark(t);
+```
