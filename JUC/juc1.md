@@ -17,7 +17,7 @@
 > sleep 和 yield都可以打断程序执行
 > sleep 程序休眠一段时间
 > yield 程序退出一下到就绪状态 - (一般不用)
-> join 只能在自己的方法里面调用别人，不可以自己调用自己，join的意思是阻塞自己让另外一个线程执行外自己再开始执行
+> join 只能在自己的方法里面调用别人，不可以自己调用自己，join的意思是阻塞自己让另外一个线程执行完成自己再开始执行
 > notifyAll()
 - destory 销毁状态 `线程正常执行完毕或者被打断后手动终止`
 > stop方法(不建议使用，已经被废弃，stop的调用会引起程序运行状态的不一致)
@@ -41,7 +41,7 @@
 - 同一个对象的 synchronize 方法可以调用 synchronize 方法
 - 执行过程异常时，会自动中断释放锁
 
->最初jdk设计时默认直接就是重量级锁，后来经过改造synchronize增加了锁升级的过程
+>最初jdk设计时默认直接就是重量级锁，后来经过改造synchronize增加了锁升级的过程（无锁，偏向锁，自旋锁，重量级锁）
 ### 2.1 synchronize（object）
 > <font color="red">不能锁定String常量、Integer、Long及一些基本数据类型</font>
 ### 2.2 线程同步
@@ -58,7 +58,7 @@
 - 多个线程调用同一个对象中的synchronize方法和非synchronize方法
 > synchronize方法不会阻止synchronize方法运行
 
-- 多个线程调用同一个对象中的不同synchronize方法
+- 多个线程调用同一个对象中的不同synchronize方法（都是静态或者非静态）
 - 多个线程调用同一个对象中的同一个synchronize方法
 > synchronize会阻塞多个线程运行，此时锁生效
 
@@ -82,7 +82,7 @@ synchronize(object);
 禁止指令重排序
 - DCL（Double Check Lock）单例
 > 实现方式
-> - 可见性使用了CPU的`MESI`缓冲一致性协议
+> - 可见性使用了CPU的`MESI`缓存一致性协议
 > - 重排序（CPU层面为了提升指令的执行效率，编译器complir 会将java的代码最后执行的指令进行重新排序）底层使用读写屏障来实现防止重排序，4种屏障，读写，写写，读读，写读。
 
 ### 第四章 CAS （compare and swap 1.8版本，1.8之后改为了 compare and set）
