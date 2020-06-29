@@ -1,6 +1,9 @@
 # java架构方面学习笔记
 ---
 ## JUC编程
+- 线程基本知识点
+- 锁synchronize
+
 
 ## Jvm
 
@@ -14,4 +17,4 @@
 
 ## kafka
 
-##
+## hive 手册
