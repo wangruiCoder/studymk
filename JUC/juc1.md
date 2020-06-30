@@ -196,7 +196,7 @@ new Thread(()->{
 ```
 
 ### 第十二章 LockSupport
-阻塞和唤醒线程使用
+阻塞和唤醒线程使用，类似于wait和notify
  * （1）wait和notify都是Object中的方法,在调用这两个方法前必须先获得锁对象，但是park不需要获取某个对象的锁就可以锁住线程。
  * （2）notify只能随机选择一个线程唤醒，无法唤醒指定的线程，unpark却可以唤醒一个指定的线程。
  > 底层是使用Unsafe类实现的，跟CAS使用的是同一个类。
@@ -220,3 +220,43 @@ t.start();
 //解锁
 LockSupport.unpark(t);
 ```
+
+### 第十三章 AQS (AbstractQueuedSynchronizer)
+`AbstractQueuedSynchronizer`是所有的java的锁的父类，其底层实现是基于CAS+volatile实现的，volatile体现在类的属性都是volatile修饰的，cas体现在获取锁和加入锁队列（双向链表CLH）都是基于cas的方式实现的。
+
+锁等待队列锁定时只锁定最后一个节点，然后使用CAS操作来判断是否可以给最后一个节点增加尾节点。因为是个最后一个节点增加锁，所以效率比较高，一般情况下我们自己写代码都是会选择会给整个链表加锁
+
+`AbstractQueuedSynchronizer`的核心是维护了一个原子的`state`和Node队列(双向链表)，其通过不同锁的实现的一个state值来控制锁的状态。`AbstractQueuedSynchronizer`他底层使用到了`模板方法设计模式`。所有子类都继承其实现自己的锁状态
+
+#### 13.1 关于AQS的面试题
+1. synchronize和ReentrantLock实现了AQS中的那些方法
+> 需要看源码解释
+> - tryAcquire 方法、unlock方法
+
+### 第十四章 ThreadLocal 
+是一个线程内部的存储类，可以在指定线程内存储数据，数据存储以后，只有指定线程可以得到存储数据。
+实际上是ThreadLocal的静态内部类ThreadLocalMap为每个Thread都维护了一个数组table
+
+``` java
+ThreadLocal threadLocal = new ThreadLocal();
+threadLocal.set(111);
+//用完必须remove，防止内存泄漏
+threadLocal.remove();
+```
+
+#### 14.1 使用场景
+- 在spring的声明式事务中就会使用到ThreadLocal，例如同一个service方法中需要对数据库有N次操作，当第一次操作获取到数据库连接后会放入到ThreadLocal中，其他的几个操作会从ThreadLocal中直接获取数据库连接，保证是同一个连接支持数据库事务。
+
+### 第十五 java的引用
+四种引用类型
+1. 强
+`Object object = new Object()`
+2. 软 `SoftReference`
+当内存不够用时会将软引用GC掉，可以用于内存缓存。
+3. 弱 `WeakReference`
+只要遭到gc就会被回收,一般用于容器。
+目前ThreadLocal中就有使用(可翻阅源码查看其ThreadLocal.Map底层继承了WeakReference)
+4. 虚 
+用于管理堆外内存的，例如netty中的DirectByteBuffer
+
+### 面试题
