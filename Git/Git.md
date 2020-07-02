@@ -3,7 +3,7 @@
 ## 克隆项目
 `git clone https://github.com/****.git`
 
-## git ssh key
+## 配置git ssh key
 需要本地已经安装了git
 电脑桌面右键选择git bash here
 1. cd ~/.ssh
@@ -19,6 +19,13 @@
 2. ssh-keygen -t rsa -C "邮箱" -f ~/.ssh/gitlab_id-rsa
 3. ssh-keygen -t rsa -C "邮箱" -f ~/.ssh/github_id-rsa
 4. ssh -T java-wangrui@www.newstrength.cn
+
+## 切换项目远程地址
+- 使用git客户端工具进入项目根目录下
+- 执行 `git remote -v ` 查看当前项目下的远程地址
+- 执行 `git remote set-url origin  https:新的项目地址`
+> origi为分支的名称，如果有多一个请根据实际需要自行更改分支名称
+- 执行 `git remote -v ` 检查是否配置成功
 
 ## 常用诊断命令
 - git status 查看git状态，可以看见本地是否有未提交的内容
