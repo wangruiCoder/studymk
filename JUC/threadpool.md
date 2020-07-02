@@ -69,7 +69,7 @@ class TestEntity {
 }
 ```
 
-### 2.1 ThreadPoolExecutor
+### 2.4 ThreadPoolExecutor
 线程池，线程池中维护了两个队列，一个是等待任务队列，一个是任务执行队列
 
 #### 1 核心线程数
