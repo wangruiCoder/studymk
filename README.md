@@ -2,8 +2,10 @@
 ---
 ## JUC编程
 - 线程基本知识点
-- 锁synchronize
-
+- 容器类
+- 线程池
+- JMH 基准代码测试
+- Disruptor 单机版本地消息队列
 
 ## Jvm
 
