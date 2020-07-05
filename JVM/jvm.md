@@ -161,5 +161,164 @@ public final class RingBuffer<E> extends RingBufferFields<E> implements Cursored
 ### 4.3 乱序问题
 是因为CPU层面会指令重排序，所以会出现乱序问题，在java中为了解决乱序问题需要使用volatile（底层是通过Unsafe类实现，Unsafe类的底层是基于CPU的内存屏障来实现）。
 
+### 4.4 内存屏障与Jvm指令
+#### 4.4.1 硬件内存屏障
+- sfence : save
+- lfence : load
+- mfence : modify/mix
+- lock
 
+#### 4.4.2 JVM级别如何规范（JSR133）
+- LoadLoad屏障
+- StoreStore屏障
+- LoadStore屏障
+- StoreLoad屏障
+
+#### 4.4.3 Volatile 是怎么实现的
+- class字节码层面
+> 在class file formate的access_flag中增加了volatile修饰符
+- JVM层面
+如下两种情况：读写操作前后分别增加了屏障
+    > StoreStroe屏障
+    volatile 写操作
+    StoreLoad屏障
+
+    > LoadLoad屏障
+    volatile读操作
+    LoadStore屏障
+- OS的硬件层面
+windows lock 指令实现
+linux 不同于windows
+
+#### 4.4.4 synchronize实现细节
+- class字节码层面
+> 增加了monitorenter 和 monitorexit 指令，monitorexit可能有多条，其中有专门用于处理运行时异常的。
+- JVM层面
+C C++ 调用了操作系统提供的同步机制
+- OS的硬件层面
+X86：lock cmpxchg 等原语
+
+### 4.5 对象的内存布局
+#### 4.5.1 创建一个对象的过程
+- class load
+> 将类加载到class load中
+- class Linking （Verfication Preparation resolution）
+> 校验class文件格式，给静态成员变量赋默认值
+- class initializing 
+> 将类的静态成员变量赋初始值，执行静态语句块
+- 申请内存
+- 成员变量赋默认值
+- 调用类的构造函数
+    1. 成员变量按顺序赋初始值
+    2. 执行构造方法语句
+
+#### 4.5.2 javaAgent 对象在内存中的存储布局
+- 普通对象
+    1. 对象头 markword 8字节
+    2. ClassPointer 指针
+    3. 实例数据
+    4. padding对齐 8 的倍数
+
+- 数组对象
+    1. 对象头 markword 8字节
+    2. ClassPointer 指针
+    3. 数组长度
+    4. 数组数据
+    5. padding对齐 8 的倍
+
+#### 4.5.3 对象头具体包括什么
+
+### 4.6 java运行时数据区
+![](1593933015(1).png)
+#### 4.6.1 各区介绍
+-JVM stacks
+
+
+- Direct Memory(直接内存区)
+Jvm可以直接使用操作系统内存，主要用于NIO的零拷贝
+- method area(方法区)
+    1. Prem Space（<1.8）
+    2. Meta Space (>1.8)
+    > 以上两个是对方法区的不同实现，取决于jdk版本
+
+#### 4.6.2 线程共享区域
+![](1593933445(1).png)
+
+#### 4.6.3 栈帧 Frame
+- Local Variable Table 局部变量
+> 
+- Operand Stack 操作数栈
+> 
+- Dynamic Linking
+> 
+- return address
+> 方法a调用了方法b，如果有返回值，b方法的返回值放在什么地方就就是return address
+
+## 第五章 GC 调优
+### 5.1 GC理论
+#### 5.1.1 什么是垃圾
+失去引用的对象称之为垃圾
+
+#### 5.1.2 怎么找到垃圾
+引用计数的方式：引用值为0时证明无人引用，但是无法解决循环引用的问题。
+
+#### 5.1.3 怎么解决引用计数的缺陷
+Root Searching 根可达算法
+
+什么是GC roots
+- 线程栈变量
+- 静态变量
+- 常量池
+- JNI指针
+
+#### 5.1.4 常用GC算法
+- Mark-Sweep （标记清除）
+> 碎片化比较严重
+适用于老年代，存活对象较多的时候
+- Copye （拷贝）
+> 浪费一半的空间
+适用于伊甸区，存活对象较少的时候
+- Mark-Compress （标记压缩）
+> 执行效率偏低
+适用于老年代
+
+#### 5.1.5 堆内存逻辑分区
+![](1593944261(1).png)
+
+除了G1 等一些新的垃圾回收器外其他的垃圾回收器的新生代和老年代的大小默认值都是1:3
+
+#### 5.1.6 一个对象从出生到消亡过程
+![](1593944478(1).png)
+
+#### 5.1.7 基本参数作用范围
+![](1593944584.png)
+
+#### 5.1.8 对象的生命周期及其分配过程
+![](1593945537(1).png)
+
+#### 5.1.9 常用命令
+- java -X 输出非标参数
+- java -XX PrintFlagsFinal 输出所有的不稳定参数
+
+### 5.2 垃圾回收器
+#### 5.2.1 常见的垃圾回收器
+![](1593946602(1).png)
+常见组合
+- Serial + Serial Old
+单线程清理
+- PS + PO
+多线程清理
+- ParNew + CMS
+
+> 概念：stop-the-world (STW) 停顿时间，垃圾回收时都需要进行 STW 操作，只是时间特别短，一般是毫秒级
+
+#### 5.2.2 CMS
+并发标记清除垃圾
+
+cms垃圾回收阶段
+![](1593947605(1).png)
+
+cms 缺点：
+- mark sweep标记导致的内存碎片化
+> 碎片化特别严重的时候就会让Serial Old标记压缩清理压力，导致STW时间特别长
 
