@@ -10,6 +10,7 @@
 > scala 等语言都会编译成class文件运行在jvm之上
 - jvm跟java无关，jvm只与class文件格式有关
 
+> JVM 中一个线程的成本默认是1M空间
 ### 1.3 Jvm 的实现
 - Hotspot
 - Jrockit
