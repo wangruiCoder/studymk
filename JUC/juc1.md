@@ -56,7 +56,7 @@
 
 ### 2.3 synchronize 锁在如下情况时会怎么运行?
 - 多个线程调用同一个对象中的synchronize方法和非synchronize方法
-> synchronize方法不会阻止synchronize方法运行
+> 静态synchronize方法不会阻止非静态synchronize方法运行
 
 - 多个线程调用同一个对象中的不同synchronize方法（都是静态或者非静态）
 - 多个线程调用同一个对象中的同一个synchronize方法
@@ -87,7 +87,7 @@ synchronize(object);
 
 ### 第四章 CAS （compare and swap 1.8版本，1.8之后改为了 compare and set）
 无锁优化 （自旋锁 乐观锁）
-> CAS的类都在`java.util.concurrent.atomic`包下，包括`AtomicInteger`等
+> CAS的原子类都在`java.util.concurrent.atomic`包下，包括`AtomicInteger`等
 CAS的操作过程为：每次在设置新的值之前都会获取一遍上一次的值，以及期望值，如果在设置新值之前上一次的值被改变则会重新获取一次
 
 CAS可能存在ABA问题
@@ -103,7 +103,7 @@ atomic count: 10000000--time: 163
 LongAdder count: 10000000--time: 73
 ```
 > - synchronize 在高并发情况下，由于锁资源争抢较多，所以很快升级为重量级锁(OS 操作系统锁)
-> - atomic 类采用CAS操作，不会冲系统申请锁
+> - atomic 类采用CAS操作，不会向系统申请锁，都是自旋等待。
 > - LongAdder 采用CAS操作，但是其底层采用 ***分段锁***，所以性能会更好
 > 不能一概而论sync性能就最差，性能问题应该结合实际的业务执行情况，或者压测结果来定论。现在版本的jdk对sync的优化已经性能很高了
 
