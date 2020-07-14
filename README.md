@@ -16,6 +16,9 @@
 ## spring cloud 核心组件
 
 ## redis
+- redis 基础使用
+- redis 底层原理
+## zookeeper
 
 ## kafka
 
