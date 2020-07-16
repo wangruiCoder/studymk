@@ -18,6 +18,8 @@ ZooKeeper是用于分布式应用程序的协调服务，它公开了一组简�
 
 ![](1.jpg)
 
+![](5.png)
+
 ## 第三章 数据模型（Data model）和分层命名空间（hierarchical namespace）
 Nodes and ephemeral nodes（节点和临时节点）
 > **临时节点:** 基于会话（session）级别的临时节点可用于分布式锁的实现。
@@ -67,7 +69,8 @@ Nodes and ephemeral nodes（节点和临时节点）
 基于paxos的高级实现
 
 
-## 第六章 API 连接
+## 第六章 分布式锁的实现过程
 
-- 使用客户端连接zk时默认是异步连接，在连接时使用countdownlatch阻塞连接
+![](4.png)
 
+## 第七章 ACL
