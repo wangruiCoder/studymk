@@ -14,6 +14,10 @@
 ## spring boot 源码
 
 ## spring cloud 核心组件
+- eureka
+- feign
+- ribbon
+- hystrix
 
 ## redis
 - redis 基础使用
