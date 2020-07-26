@@ -36,10 +36,10 @@ jvm默认是懒加载，当需要使用的时候再去加载。
 
 - Loading
 - Linking
-    1. Verfication
-    2. Preparation
-    3. resolution
-    > 静态变量初始化
+    1. Verfication 验证，验证其是否满足规范是否符合Class file format格式
+    2. Preparation 准备
+    3. resolution 正式加载
+    > 过程详见3.5章节
 - initializing
 ### 3.2 加载层次
 自上而下进行实际查找和加载
@@ -125,7 +125,7 @@ protected Class<?> loadClass(String name, boolean resolve)
 #### 3.5.1 Verfication
 验证文件是否符合JVM规定
 #### 3.5.2 Preparation
-静态成员变量赋默认值
+静态成员变量赋默认值 （例如 int i = 10,在这个阶段i赋默认值为0，在初始化阶段才会赋值为10）
 #### 3.5.3 resolution
 将类、方法、属性等符合引用解析为直接引用。常量池中的各种符号引用解析为指针，偏移量等内存地址的直接引用
 
@@ -135,7 +135,7 @@ protected Class<?> loadClass(String name, boolean resolve)
 
 ## 第四章 JMM java memory moudle （java的内存模型）
 ### 4.1 硬件数据一致性
-- MESI intel的缓冲一致性协议
+- MESI intel的缓存一致性协议
 
 ### 4.2 缓存行（面试会被问到）
 读取内存中缓存的时候以cache line为基准向更高级的缓存块中读取，这么做主要是用于提升效率，目前line为 长度为64位。
@@ -225,15 +225,41 @@ X86：lock cmpxchg 等原语
     2. ClassPointer 指针
     3. 数组长度
     4. 数组数据
-    5. padding对齐 8 的倍
+    5. padding对齐 8 的倍数
 
 #### 4.5.3 对象头具体包括什么
+分为Mark Work（对象信息）和Klass Word（元数据和方法信息）和State（对象状态）
+
+- Mark Word详解
+它用于存储对象的运行时记录信息，如哈希值、GC分代年龄(Age)、锁状态标志（偏向锁、轻量级锁、重量级锁）、线程持有的锁、偏向线程ID、偏向时间戳等。Mark Word允许压缩
+
+- Klass 详解
+像 Method 、 ConstantPool 都会以成员变量（或指针）的形式存在于klass体系中
+
+- Klass Word OOp模型
+> oop模型是 Ordinary Object Pointer （普通对象指针） 
+
+下面我们来分析一下，执行 new A() 的时候，JVM Native里发生了什么。首先，如果这个类没有被加载过，JVM就会进行类的加载，并在JVM内部创建一个 instanceKlass 对象表示这个类的运行时元数据（相当于Java层的 Class 对象。到初始化的时候（执行 invokespecial A::<init> ），JVM就会创建一个
+
+instanceOopDesc对象表示这个对象的实例，然后进行Mark Word的填充，将元数据指针指向Klass对象，并填充实例变量。
+
+根据对JVM的理解，我们可以想到，元数据—— instanceKlass 对象会存在元空间（方法区），而对象实例—— instanceOopDesc 会存在Java堆。Java虚拟机栈中会存有这个对象实例的引用。
+
+- Object Header 图解
+![](3.png)
+
+Java的对象头在对象的不同的状态下会有不同的表现形式，主要有三种状态，无锁状态，加锁状态，GC标记状态。那么就可以理解Java当中的上锁其实可以理解给对象上锁。也就是改变对象头的状态，如果上锁成功则进入同步代码块。但是Java当中的锁又分为很多种，从上图可以看出大体分为偏向锁、轻量锁、重量锁三种锁状态。
+
+1. Nomal无锁状态(前两位)
+2. Biased偏向锁(中间四位)
+3. Lightweight轻量锁
+4. Heavyweight重量级锁
+5. GC状态
 
 ### 4.6 java运行时数据区
 ![](1593933015(1).png)
 #### 4.6.1 各区介绍
--JVM stacks
-
+- JVM stacks
 
 - Direct Memory(直接内存区)
 Jvm可以直接使用操作系统内存，主要用于NIO的零拷贝
@@ -253,7 +279,7 @@ Jvm可以直接使用操作系统内存，主要用于NIO的零拷贝
 - Dynamic Linking
 > 
 - return address
-> 方法a调用了方法b，如果有返回值，b方法的返回值放在什么地方就就是return address
+> 方法a调用了方法b，如果有返回值，b方法的返回值放在什么地方就是return address
 
 ## 第五章 GC 调优
 ### 5.1 GC理论

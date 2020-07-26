@@ -106,6 +106,7 @@ RejectedExecutionHandler
 - ThreadPoolExecutor.DiscardPolicy()
 > 直接丢弃不抛出异常
 - 自定义拒绝策略，一般情况下会选择自定义拒绝策略
+> 实现`RejectedExecutionHandler`类自定义拒绝策略
 
 ### 2.5 SingleThreadExecutor 单线程线程池 （属于ThreadPoolExecutor的快捷方式）
 只有一个线程运行的线程池

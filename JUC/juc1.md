@@ -10,6 +10,7 @@
 线程是程序运行的最小单元，一个进程的所有任务都在线程中执行
 
 ### 1.3 线程的几种状态
+**通常说的线程的几种状态**
 - New 新建 `new Thread()`
 - Runable 就绪状态 `调用start()后`
 - Running 运行状态 `获得了CPU的时间片，并运行run()方法中的程序段`
@@ -19,10 +20,22 @@
 > yield 程序退出一下到就绪状态 - (一般不用)
 > join 只能在自己的方法里面调用别人，不可以自己调用自己，join的意思是阻塞自己让另外一个线程执行完成自己再开始执行
 > notifyAll()
-- destory 销毁状态 `线程正常执行完毕或者被打断后手动终止`
+- terminated 销毁状态 `线程正常执行完毕或者被打断后手动终止`
 > stop方法(不建议使用，已经被废弃，stop的调用会引起程序运行状态的不一致)
  
 > ***getState 可以清楚的看到线程的状态情况***
+
+**JDK1.5后的Thread状态定义**
+- New 新建 `new Thread()`
+- Runable 就绪运行状态 `调用start()后,未获得CPU时间片和运行中都是Runable状态`
+- blocked 阻塞状态 `阻塞等待着前一个获得锁的对象释放锁`
+- waiting 等待状态
+    1. 能让线程进入WAITING状态的方法
+    2. wait/join/LockSupport.park
+- timed_waiting 倒计时等待
+    1. 能让线程进入TIMED_WAITING状态的方法
+    2. wait(long)/join(long)/LockSupport.parkNanos/LockSupport.parkUntil
+- terminated 销毁状态
 
 ### 1.4 多线程
 - 优点
@@ -30,21 +43,28 @@
 > 能适当提高资源的利用率（CPU，内存）
 
 - 缺点
-> 开启线程需要占用一定的内存空间（默认情况下，每一个线程都占 512 KB）
+> 开启线程需要占用一定的内存空间（默认情况下，每一个线程都占 1 MB）
 > 如果开启大量的线程，会占用大量的内存空间，降低程序的性能
 > 线程越多，CPU 在调用线程上的开销就越大
 > 程序设计更加复杂，比如线程间的通信、多线程的数据共享
  
 ## 第二章 synchronize
-可重入锁，重量级锁，保证了原子性，可见性，但是不能保证指令会重排序
+可重入锁，重量级锁，保证了原子性，可见性，但是不能保证指令会重排序，靠操作系统内核互斥锁实现的。
+
 可重入体现在如下几个方面
-- 同一个对象的 synchronize 方法可以调用 synchronize 方法
+- 同一个对象中的 synchronize 方法可以调用 synchronize 方法
 - 执行过程异常时，会自动中断释放锁
 
 >最初jdk设计时默认直接就是重量级锁，后来经过改造synchronize增加了锁升级的过程（无锁，偏向锁，自旋锁，重量级锁）
 ### 2.1 synchronize（object）
 > <font color="red">不能锁定String常量、Integer、Long及一些基本数据类型</font>
-### 2.2 线程同步
+String Integer Long 赋值时对象地址会发生变化，synchronize 最底层则是使用的 `==`来判断是否一样的。 
+``` java
+//锁定对象时一定要使用final,防止发生对象地址被变更
+final Object object = new Object();
+synchronize(object);
+```
+### 2.2 synchronize锁介绍
 1. 锁的是一个对象而不是一串代码段
 2. 如果synchronize加在静态方法上锁定的即是`Class`，如果加在非静态代码块上锁定的是`this`
 3. 锁升级（无锁，偏向锁，自旋锁，重量级锁）
@@ -54,7 +74,8 @@
 
 > 注意：**自旋锁-适用于执行时间较短且线程数较少的情况下，因为其会向jvm堆申请空间，如果执行时间长且线程特别多，容易造成jvm压力过大。反之执行时间长线程数多适合使用重量级锁**
 
-### 2.3 synchronize 锁在如下情况时会怎么运行?
+### 2.3 synchronize 锁在如下情况时会怎么运行?（线程8锁）
+核心思想就是判断synchronize锁定的对象是谁，只有加锁且争抢锁时才会发生竞争。
 - 多个线程调用同一个对象中的synchronize方法和非synchronize方法
 > 静态synchronize方法不会阻止非静态synchronize方法运行
 
@@ -81,13 +102,12 @@ synchronize(object);
 保证线程可见性，但是不能保证原子性
 禁止指令重排序
 - DCL（Double Check Lock）单例
-> 实现方式
 > - 可见性使用了CPU的`MESI`缓存一致性协议
-> - 重排序（CPU层面为了提升指令的执行效率，编译器complir 会将java的代码最后执行的指令进行重新排序）底层使用读写屏障来实现防止重排序，4种屏障，读写，写写，读读，写读。
+> - 重排序（CPU层面为了提升指令的执行效率，编译器compile 会将java的代码最后执行的指令进行重新排序）底层使用读写屏障来实现防止重排序，4种屏障，读写，写写，读读，写读。
 
 ### 第四章 CAS （compare and swap 1.8版本，1.8之后改为了 compare and set）
 无锁优化 （自旋锁 乐观锁）
-> CAS的原子类都在`java.util.concurrent.atomic`包下，包括`AtomicInteger`等
+> CAS的原子类`java.util.concurrent.atomic`包下，包括`AtomicInteger`等
 CAS的操作过程为：每次在设置新的值之前都会获取一遍上一次的值，以及期望值，如果在设置新值之前上一次的值被改变则会重新获取一次
 
 CAS可能存在ABA问题
@@ -226,7 +246,7 @@ LockSupport.unpark(t);
 
 锁等待队列锁定时只锁定最后一个节点，然后使用CAS操作来判断是否可以给最后一个节点增加尾节点。因为是个最后一个节点增加锁，所以效率比较高，一般情况下我们自己写代码都是会选择会给整个链表加锁
 
-`AbstractQueuedSynchronizer`的核心是维护了一个原子的`state`和Node队列(双向链表)，其通过不同锁的实现的一个state值来控制锁的状态。`AbstractQueuedSynchronizer`他底层使用到了`模板方法设计模式`。所有子类都继承其实现自己的锁状态
+`AbstractQueuedSynchronizer`的核心是维护了一个原子的`state`和Node队列(双向链表)，其通过不同锁的实现一个state值来控制锁的状态。`AbstractQueuedSynchronizer`他底层使用到了`模板方法设计模式`。所有子类都继承其实现自己的锁状态
 
 #### 13.1 关于AQS的面试题
 1. synchronize和ReentrantLock实现了AQS中的那些方法
@@ -235,7 +255,7 @@ LockSupport.unpark(t);
 
 ### 第十四章 ThreadLocal 
 是一个线程内部的存储类，可以在指定线程内存储数据，数据存储以后，只有指定线程可以得到存储数据。
-实际上是ThreadLocal的静态内部类ThreadLocalMap为每个Thread都维护了一个数组table
+实际上是ThreadLocal的静态内部类ThreadLocalMap为每个Thread都维护了一个数组`table`
 
 ``` java
 ThreadLocal threadLocal = new ThreadLocal();
@@ -259,4 +279,3 @@ threadLocal.remove();
 4. 虚 
 用于管理堆外内存的，例如netty中的DirectByteBuffer
 
-### 面试题

@@ -128,11 +128,15 @@ public void put(E e) throws InterruptedException {
 ```
 
 ### 1.7 BlockingQueue->DelayQueue
+延迟(Delay)队列
+
 队列中的元素可以按照时间排序，最小时间的排在最上面，使用`DelayQueue`,需要重写compareTo(排序)方法
 > 使用场景：按照时间进行的计划任务
 
 ### 1.8 PriorityQueue
-内部可排序队列
+优先(Priority)队列
+
+内部可排序队列，默认升序
 数据结构：二叉树
 
 ### 1.9 SynchronousQueue
@@ -206,6 +210,9 @@ public synchronized V put(K key, V value) {
 > 性能：
 >- 读 
 >- 写 效率高 200毫秒
+
+> hash 碰撞，HashMap底层是使用的链表解决hash冲突的，如果发现key已存在且hashCode相同，则将其放入当前节点对应的单链表的尾部
+![](2.png)
 
 ### 2.3 TreeMap
 ***非线程安全***
