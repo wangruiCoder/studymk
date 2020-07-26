@@ -76,14 +76,14 @@
 
 ![常用垃圾回收器](常用垃圾回收器.png)
 
-1. JDK诞生 Serial追随 提高效率，诞生了PS，为了配合CMS，诞生了PN，CMS是1.4版本后期引入，CMS是里程碑式的GC，它开启了并发回收的过程，但是CMS毛病较多，因此目前任何一个JDK版本默认是CMS
+1. JDK诞生 Serial追随 提高效率，诞生了PS，为了配合CMS，诞生了PN，CMS是1.4版本后期引入，CMS是里程碑式的GC，它开启了并发回收的过程，但是CMS毛病较多，因此目前任何一个JDK版本默认都不是CMS
    并发垃圾回收是因为无法忍受STW
 2. Serial 年轻代 串行回收
 3. PS 年轻代 并行回收
 4. ParNew 年轻代 配合CMS的并行回收
 5. SerialOld 
 6. ParallelOld
-7. ConcurrentMarkSweep 老年代 并发的， 垃圾回收和应用程序同时运行，降低STW的时间(200ms)
+7. ConcurrentMarkSweep 老年代 并发的垃圾回收和应用程序同时运行，降低STW的时间(200ms)
    CMS问题比较多，所以现在没有一个版本默认是CMS，只能手工指定
    CMS既然是MarkSweep，就一定会有碎片化的问题，碎片到达一定程度，CMS的老年代分配对象分配不下的时候，使用SerialOld 进行老年代回收
    想象一下：
@@ -169,7 +169,7 @@
   1. 区分概念：内存泄漏memory leak，内存溢出out of memory
   2. java -XX:+PrintCommandLineFlags HelloGC
   3. java -Xmn10M -Xms40M -Xmx60M -XX:+PrintCommandLineFlags -XX:+PrintGC  HelloGC
-     PrintGCDetails PrintGCTimeStamps PrintGCCauses
+     如果需要更加详细的gc日志请指定这几个参数PrintGCDetails PrintGCTimeStamps PrintGCCauses
   4. java -XX:+UseConcMarkSweepGC -XX:+PrintCommandLineFlags HelloGC
   5. java -XX:+PrintFlagsInitial 默认参数值
   6. java -XX:+PrintFlagsFinal 最终参数值
@@ -782,17 +782,18 @@ OOM产生的原因多种多样，有些程序未必产生OOM，不断FGC(CPU飙�
 1. -XX:MaxTenuringThreshold控制的是什么？
    A: 对象升入老年代的年龄
      	B: 老年代触发FGC时的内存垃圾比例
-
+> A 设置的是年龄阈值，默认15（对象被复制的次数）
 2. 生产环境中，倾向于将最大堆内存和最小堆内存设置为：（为什么？）
    A: 相同 B：不同
-
+> A 减少内存震荡
 3. JDK1.8默认的垃圾回收器是：
    A: ParNew + CMS
      	B: G1
      	C: PS + ParallelOld
      	D: 以上都不是
-
+> C
 4. 什么是响应时间优先？
+> 系统短时间内完成请求
 
 5. 什么是吞吐量优先？
 
@@ -801,9 +802,9 @@ OOM产生的原因多种多样，有些程序未必产生OOM，不断FGC(CPU飙�
 7. ParNew和ParallelOld的区别是什么？（年代不同，算法不同）
 
 8. 长时间计算的场景应该选择：A：停顿时间 B: 吞吐量
-
+> B
 9. 大规模电商网站应该选择：A：停顿时间 B: 吞吐量
-
+> A
 10. HotSpot的垃圾收集器最常用有哪些？
 
 11. 常见的HotSpot垃圾收集器组合有哪些？
@@ -813,7 +814,7 @@ OOM产生的原因多种多样，有些程序未必产生OOM，不断FGC(CPU飙�
 13. 所谓调优，到底是在调什么？
 
 14. 如果采用PS + ParrallelOld组合，怎么做才能让系统基本不产生FGC
-
+> 加大内存
 15. 如果采用ParNew + CMS组合，怎样做才能够让系统基本不产生FGC
 
      1.加大JVM内存
@@ -827,6 +828,7 @@ OOM产生的原因多种多样，有些程序未必产生OOM，不断FGC(CPU飙�
      5.避免代码内存泄漏
 
 16. G1是否分代？G1垃圾回收器会产生FGC吗？
+> 物理部分，逻辑分
 
 17. 如果G1产生FGC，你应该做什么？
 
