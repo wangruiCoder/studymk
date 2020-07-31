@@ -140,7 +140,7 @@ HSCAN user:1 0 match ag* count 2
 - zcard key 获取key中元素数量
 - zcount key min max 获取key中score值在min-max之间的元素数量
 - zincrby key no member 给制定的元素score值增加几，可以是正数和负数
-- zinterstore resultkey k1 k2 weights aggregate sum|min|max 获取连个key的交集并保存到resultkey中
+- zinterstore resultkey k1 k2 weights aggregate sum|min|max 获取两个key的交集并保存到resultkey中
 - zrange key start end withscores 获取所有的元素及其scores值
 - zrank key member 获取成员在set中的索引值
 - zrem key member 删除成员
