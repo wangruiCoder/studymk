@@ -405,9 +405,31 @@ feign:
 #### 6.2 舱壁模式
 ![](6.png)
 
+### 第七章 spring gateway
+
+#### 7.1 启用gateway 从eureka中获取服务注册实例
+```yml
+gateway:
+    discovery:
+        locator:
+            enabled: true
+```
+
+#### 7.2 启用cookie 过滤请求
+```yml
+routes:
+- id: kyrie-api
+    uri: http://127.0.0.1:9002
+    predicates:
+    - name: Cookie
+        args:
+        name: mycookie
+        regexp: 123
+```
+> cookie 的domain信息必须是请求的gateway的ip地址或者域名
 
 
-### 第七章 QPS优化
+### 第八章 QPS优化
 #### 提高并发数据
 - 多线程
 - 增加连接数 Tomcat redis mysql
