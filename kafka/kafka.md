@@ -64,31 +64,31 @@ kafka的消息虽然是保存在磁盘上，但是他底层的实现可以保证
 Kafka数据消费时采用的是零拷贝机制，减少了内核空间到用户空间的拷贝，以此来提升读性能
 ![](7.png)
 
-### 1.1 事务
+### 1.10 事务
 - producer事务
 > 需要引入一个全局唯一的TransactionID，并将Producer获得的PID和TransactionID绑定，这样当Producer重启后就可以通过正在进行的TransactionID获取原来的PID。
 为了管理Transaction，kafka引入了一个新的组件Transaction Coordinator。Producer就是通过Transaction Coordinator交互获得TransactionID对应的任务状态。Transaction Coordinator还负责将事务写入Kafka的一个内部Topic(_topic_)，这样即使整个服务重启，由于事务状态得到保存，进行中的事务状态可以得到恢复，从而继续进行。
 
 >> 如果会话ID Pid发生了变化事务就需要重新进行，原来的将不可用
 
-### 1.2 ISR
-in-sync replicasct (ISR)同步副本，意思是和leader保持同步的follower集合
+### 1.11 ISR
+in-sync replicasct (ISR)同步副本，意思是和leader保持同步的follower集合，ISR中规定一段时间内同步服务一直无法保证follower节点和leader节点数据保持一致就会将其从ISR列表中剔除。
+> replica.lag.time.max.ms (默认30s)规定时间内主节点会检测从节点是否从主节点中同步数据
 
-### 1.3 分区同步策略
+### 1.12 高水位(Height watermark)
+早起版本的kafka集群中分区与分区间同步数据使用的高水位的概念进行的。但是高水位同步存在数据丢失和数据不一致的问题
 
-### 1.4 日志（数据）文件
-
-### 1.5 高效读写
-- 顺序写磁盘
-> 顺序写能到 600M/s 一直追加到文件末端
-- 零拷贝（zero-copy）
-
-
-
+![](8.png)
+### 1.13 LEO（Leader Epoch）
+从0.11版本后kafka升级为使用leader Epoch来实现数据同步机制。
 
 ## 第二章 具体使用
 
 ### 2.1 生产者
+#### 2.1.1 序列化
+在使用Kafka发送接收消息时，producer端需要序列化，consumer端需要反序列化，在大多数场景中，需要传输的是与业务规则相关的复杂类型，这就需要自定义数据结构
+
+
 
 ### 2.2 消费者
 - 分配策略
@@ -103,11 +103,13 @@ in-sync replicasct (ISR)同步副本，意思是和leader保持同步的follower
 
 ### 2.3 消费者组
 
-### 2.3 过滤器
+### 2.3 过滤器 
 
-### 2.4 
+### 2.4 ack和重试机制
+默认情况下生产者在30秒内没有收到kafka服务器ack时，会启用无限的重试提交机制。但是重试时会存在一个问题就是数据会被重复发送，例如网络故障后，在单位时间内生产者启用了重试，会无限的给服务端发送重复消息，造成消息重复。
 
-### 2.5
+### 2.5 幂等写
+为了解决在ack机制下导致的重复发送问题，kafka支持幂等写。kafka会给每一个生产者颁发一个ProducerID。对于每个ProducerID，Producer发送数据的每个Topic和Partition都对应一个从0开始单调递增的SequenceNumber值。如果重复发送一条消息时SequenceNumber和ProducerID一致则证明是同一条信息，这时kafka就不会将这条信息存入。如果启用了kafka的幂等写，则生产者的ack必须是-1。
 
 
 
