@@ -177,9 +177,12 @@ HSCAN user:1 0 match ag* count 2
 - key无延续时间的策略
 
 ***key的淘汰策略***
-1. 按照最少使用量淘汰
-2. 按照最少使用时间淘汰
-3. 随机回收
+- noeviction:不删除策略，达到最大内存限制时，如果需要更多内存，直接返回错误信息。
+大多数写命令都会导致占用更多的内存（有极少数例外，如del）
+- allkeys-lru:所有key通用，优先删除最近最少使用的(less recently used,LRU)key.
+- allkeys-random:所有key通用，随机删除一部分key.
+- volatile-random:只限于设置了expire的部分，删除一部分expire的key.
+- volatile-ttl:只限于设置了expire的部分，优先删除剩余时间(time to live,TTL)短的key.
 
 ***key的过期淘汰策略***
 1. 被动过期
